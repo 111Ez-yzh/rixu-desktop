@@ -4,9 +4,9 @@
 
 ![日序工作台，建筑摄影风格日历与三个工具入口](主页预览.png)
 
-## 下载与运行
+## 获取与运行
 
-在 [最新发布](https://github.com/111Ez-yzh/rixu-desktop/releases/latest) 下载 `RiXu.exe`，双击即可运行。适用于安装了 .NET Framework 4.8 的 Windows 10/11 桌面环境。发布页同时提供 SHA-256 校验值。
+从 GitHub 的 **Code → Download ZIP** 下载并解压源码，或使用 Git 克隆仓库。按下方[构建说明](#从源码构建)生成 `日序.exe`，双击运行。适用于安装了 .NET Framework 4.8 的 Windows 10/11 桌面环境。
 
 | 工具 | 完整窗口 | 缩小模式 |
 | --- | --- | --- |

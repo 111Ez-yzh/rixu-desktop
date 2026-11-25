@@ -12,28 +12,13 @@ using System.Windows.Media;
 using System.Windows.Threading;
 using System.Xml.Serialization;
 
-public class Todo { public string Title; public bool Done; }
-public class Pay {
-    public decimal Monthly, Days = 22;
-    public int Start = 540, Lunch = 720, Resume = 780, End = 1080;
-    public bool Weekdays = true;
-    public int PaidMinutes { get { return End - Start - (Resume - Lunch); } }
-    public bool WorkingDay(DateTime now) {
-        return !Weekdays || (now.DayOfWeek != DayOfWeek.Saturday && now.DayOfWeek != DayOfWeek.Sunday);
-    }
-    public decimal Earned(DateTime now) {
-        if (!WorkingDay(now)) return 0;
-        int seconds = (int)now.TimeOfDay.TotalSeconds;
-        int paid = Math.Max(0, Math.Min(seconds, Lunch * 60) - Start * 60)
-                 + Math.Max(0, Math.Min(seconds, End * 60) - Resume * 60);
-        return Monthly / Days * paid / (PaidMinutes * 60);
-    }
-}
 public class DeskData {
     public Pay Pay = new Pay();
     public List<Todo> Tasks = new List<Todo>();
     public string[] Zones = {"China Standard Time","Tokyo Standard Time","GMT Standard Time","Eastern Standard Time"};
-    public bool Pinned; public bool DigitalFace; public string ActiveCity; public string[] CompactZones;
+    public string UiLanguage="zh-CN";
+    public string ClockDesign="Titanium";
+    public bool Pinned; public bool DigitalFace; public bool ListOnly; public string ActiveCity; public string[] CompactZones; public string[] OpenWidgets;
 }
 public partial class DayDesk {
     readonly Window window;
@@ -47,11 +32,17 @@ public partial class DayDesk {
     Button Button(string name) { return Element<Button>(window,name); }
     public DayDesk(Window view, DeskData state, string file) {
         window=view; data=state; path=file;
+        RoundedSurfaces.Load(window.Resources);RoundedSurfaces.Frame(window);
+        RoundedSurfaces.Clip(Element<Grid>(window,"CoverPanel"),24);
+        ControlMotion.Enable(window);
+        SetupLanguage();
         var pin = Element<CheckBox>(window,"Pin");
         pin.IsChecked=window.Topmost=data.Pinned;
         pin.Click += delegate { window.Topmost=data.Pinned=pin.IsChecked == true; Save(); };
         Button("Settings").Click += delegate { EditPay(); };
         Button("Zones").Click += delegate { EditZones(); };
+        Button("PlanTask").Click += delegate { EditTask(null); };
+        Button("TaskHistory").Click += delegate { ShowTaskHistory(); };
         Button("AddTask").Click += delegate { AddTask(); };
         Element<TextBox>(window,"TaskEntry").KeyDown += (s,e) => { if(e.Key==Key.Enter && !e.ImeProcessedKey.Equals(Key.Enter)) { AddTask(); e.Handled=true; } };
         Button("StartFocus").Click += delegate {
@@ -60,9 +51,13 @@ public partial class DayDesk {
             Refresh();
         };
         Button("ResetFocus").Click += delegate { remaining=1500; focusEnd=null; Refresh(); };
-        SetupPages(); DrawTasks(); DrawClocks(); Navigate("Home"); Refresh();
+        SetupPages(); DrawTasks(); DrawClocks(); Navigate("Home");
         timer.Interval=TimeSpan.FromSeconds(1); timer.Tick += delegate { Refresh(); }; timer.Start();
-        window.Closed += delegate { timer.Stop(); };
+        window.ContentRendered+=RestoreWidgets;
+        window.Closed += delegate {
+            closingWorkspace=true;timer.Stop();
+            if(widgetWindow!=null)widgetWindow.Close();
+        };
     }
     void Save() {
         try {
@@ -70,7 +65,7 @@ public partial class DayDesk {
             string temp=path+".tmp";
             using(var stream=File.Create(temp)) new XmlSerializer(typeof(DeskData)).Serialize(stream,data);
             if(File.Exists(path)) File.Replace(temp,path,null); else File.Move(temp,path);
-        } catch(Exception ex) { MessageBox.Show(widget??window,"本次修改仅在当前窗口生效。保存失败：" + ex.Message); }
+        } catch(Exception ex) { RoundedSurfaces.Notice(widgetWindow!=null && widgetWindow.IsActive?widgetWindow:window,T("brand"),T("saveError")+" "+ex.Message); }
     }
     void AddTask() {
         var input=Element<TextBox>(window,"TaskEntry");
@@ -78,53 +73,61 @@ public partial class DayDesk {
         if(title.Length==0) { input.Focus(); return; }
         data.Tasks.Add(new Todo {Title=title}); input.Clear(); DrawTasks(); Save(); input.Focus();
     }
-    void DrawTasks() {
+    void DrawTasks(Todo changedTask=null) {
         var list=Element<StackPanel>(window,"Tasks"); list.Children.Clear();
-        foreach(var item in data.Tasks.OrderBy(t=>t.Done)) {
-            Todo task=item;
-            var row=new DockPanel {Margin=new Thickness(0,3,0,3)};
-            var remove=new Button {Content="删除",ToolTip="删除此待办"};
-            DockPanel.SetDock(remove,Dock.Right); row.Children.Add(remove);
-            var label=new TextBlock {Text=task.Title,TextWrapping=TextWrapping.Wrap};
-            if(task.Done) label.TextDecorations=TextDecorations.Strikethrough;
-            var check=new CheckBox {Content=label,IsChecked=task.Done,VerticalAlignment=VerticalAlignment.Center};
-            row.Children.Add(check); list.Children.Add(row);
-            check.Click += delegate { task.Done=check.IsChecked==true; DrawTasks(); Save(); };
-            remove.Click += delegate { data.Tasks.Remove(task); DrawTasks(); Save(); };
+        foreach(var task in OrderedTasks()) {
+            var row=new DockPanel {Margin=new Thickness(0,4,0,4)};
+            var remove=new Button {Content=task.Done?T("archiveTask"):T("delete"),ToolTip=task.Done?T("archiveHint"):T("deleteTip")};
+            DockPanel.SetDock(remove,Dock.Right);row.Children.Add(remove);
+            var edit=new Button {Content=T("editTask"),Margin=new Thickness(0,0,6,0)};
+            DockPanel.SetDock(edit,Dock.Right);row.Children.Add(edit);
+            row.Children.Add(TaskCheck(task,false,task==changedTask));list.Children.Add(row);
+            edit.Click += delegate { EditTask(task); };
+            remove.Click += delegate {
+                if(task.Done)task.Archived=true;
+                else data.Tasks.Remove(task);
+                DrawTasks();Save();
+            };
         }
-        Say("TaskCount",data.Tasks.Count(t=>!t.Done)+" 项待办");
-        Element<TextBlock>(window,"Empty").Visibility=data.Tasks.Count==0 ? Visibility.Visible : Visibility.Hidden;
+        FillNote(changedTask);
+        Say("TaskCount",F("pendingCount",data.Tasks.Count(t=>!t.Done)));
+        Element<TextBlock>(window,"Empty").Visibility=data.Tasks.All(t=>t.Archived) ? Visibility.Visible : Visibility.Hidden;
     }
     int SecondsLeft() { return Math.Max(0,(int)Math.Ceiling((focusEnd.Value-DateTime.UtcNow).TotalSeconds)); }
     void Refresh() {
         var utc=DateTime.UtcNow; var now=utc.ToLocalTime(); var p=data.Pay;
+        var rate=p.ForDay(now);
+        var currency=PayCurrency.ForCode(p.Currency);
+        decimal earned=rate.Earned(now);
         if(page=="World") UpdateClocks(utc);
-        Say("DateLabel",now.ToString("M 月 d 日  dddd",new System.Globalization.CultureInfo("zh-CN")));
-        Say("Amount",p.Monthly==0 ? "¥ —" : "¥ "+p.Earned(now).ToString("N4"));
-        Say("Rate",p.Monthly==0 ? "在薪资设置中填写月薪，即可开始估算" : String.Format("秒薪 ¥{0:F4}     /     日薪 ¥{1:N2}",p.Monthly/p.Days/(p.PaidMinutes*60),p.Monthly/p.Days));
+        Say("DateLabel",now.ToString(EnglishUI?"ddd, MMM d":"M 月 d 日  dddd",UiCulture));
+        Say("Amount",currency.Format(p.Monthly==0 ? (decimal?)null : earned,UiCulture,true));
+        Say("Rate",p.Monthly==0 ? T("rateEmpty") : rate.MonthDays==0 ? T("noWorkThisMonth") :
+            F("rates",currency.Format(rate.PerSecond,UiCulture,true),currency.Format(rate.DailyPay,UiCulture)));
         int minute=now.Hour*60+now.Minute;
-        string shift=!p.WorkingDay(now) ? "休息日" : minute<p.Start ? "尚未上班" : minute>=p.End ? "已下班" : minute>=p.Lunch && minute<p.Resume ? "午休中" : "工作中";
+        string shift=!rate.IsWorkday ? T("offDay") : minute<p.Start ? T("beforeWork") : minute>=p.End ? T("afterWork") : minute>=p.Lunch && minute<rate.LunchEnd ? T("lunch") : T("working");
         Say("Shift",shift);
         if(page=="Home") {
-            Say("IssueMonth",now.ToString("MMMM yyyy",System.Globalization.CultureInfo.InvariantCulture));
+            Say("IssueMonth",now.ToString(EnglishUI?"MMMM yyyy":"yyyy 年 M 月",UiCulture));
             Say("IssueDay",now.ToString("dd"));Say("LocalTime",now.ToString("HH:mm:ss"));
-            summaries["Payroll"].Text=p.Monthly>0 ? shift+"  ·  今日预计已赚 "+p.Earned(now).ToString("C2",new System.Globalization.CultureInfo("zh-CN")) : "设置月薪与工作时间";
-            summaries["World"].Text=selected.Count+" 个地点  ·  "+active.City;
-            summaries["TodoPage"].Text=data.Tasks.Count(t=>!t.Done)+" 项待办  ·  "+data.Tasks.Count(t=>t.Done)+" 项已完成";
+            summaries["Payroll"].Text=p.Monthly>0 ? F("paySummary",shift,currency.Format(earned,UiCulture)) : T("setupPay");
+            summaries["World"].Text=F("worldSummary",selected.Count,CityName(active));
+            summaries["TodoPage"].Text=F("taskSummary",data.Tasks.Count(t=>!t.Done),data.Tasks.Count(t=>t.Done && !t.Archived));
         }
         RefreshWidget(utc);
-        Say("Countdown",p.WorkingDay(now) && minute<p.End ? "距下班  "+(now.Date.AddMinutes(p.End)-now).ToString(@"hh\:mm\:ss") : "");
+        Say("Countdown",rate.IsWorkday && minute<p.End ? F("countdown",(now.Date.AddMinutes(p.End)-now).ToString(@"hh\:mm\:ss")) : "");
         if(focusEnd.HasValue) {
             remaining=SecondsLeft();
             if(remaining==0) { focusEnd=null; System.Media.SystemSounds.Asterisk.Play(); }
         }
         Say("FocusTime",TimeSpan.FromSeconds(remaining).ToString(@"mm\:ss"));
-        Say("FocusLabel",remaining==0 ? "专注完成，休息一下" : "专注计时");
-        Button("StartFocus").Content=focusEnd.HasValue ? "暂停" : remaining==1500 || remaining==0 ? "开始专注" : "继续";
+        Say("FocusLabel",remaining==0 ? T("focusDone") : T("focus"));
+        Button("StartFocus").Content=focusEnd.HasValue ? T("pause") : remaining==1500 || remaining==0 ? T("startFocus") : T("resume");
     }
     Window Dialog(string title,FrameworkElement content,int height) {
-        return new Window {Resources=window.Resources, Background=window.Background,Foreground=window.Foreground, Title=title,Owner=window,Content=content,Width=460,Height=height,
-            MinWidth=400,MinHeight=360,FontFamily=window.FontFamily,FontSize=14,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+        var dialog=new Window {Language=window.Language,Resources=window.Resources, Background=window.Background,Foreground=window.Foreground, Title=title,Owner=window,Content=content,Width=460,Height=height,
+            MinWidth=400,MinHeight=360,FontFamily=window.FontFamily,FontWeight=window.FontWeight,FontSize=14,WindowStartupLocation=WindowStartupLocation.CenterOwner};
+        RoundedSurfaces.Frame(dialog);ControlMotion.Enable(dialog);return dialog;
     }
     static Button ActionButton(string label) { return new Button {Content=label,Padding=new Thickness(14,7,14,7),HorizontalAlignment=HorizontalAlignment.Right,Margin=new Thickness(0,6,0,4)}; }
     static TextBox Field(Panel panel,string label,string value) {
@@ -138,37 +141,10 @@ public partial class DayDesk {
         TimeSpan value;
         return TimeSpan.TryParseExact(text.Trim(),new[]{@"h\:mm",@"hh\:mm"},null,out value) && value.TotalMinutes<1440 ? (int)value.TotalMinutes : -1;
     }
-    void EditPay() {
-        var panel=new StackPanel {Margin=new Thickness(22)};
-        var dialog=Dialog("薪资设置",new ScrollViewer {Content=panel,VerticalScrollBarVisibility=ScrollBarVisibility.Auto},454);
-        var p=data.Pay;
-        var salary=Field(panel,"月薪（人民币）",p.Monthly.ToString());
-        var days=Field(panel,"月计薪天数",p.Days.ToString());
-        var start=Field(panel,"上班时间",Clock(p.Start));
-        var lunch=Field(panel,"午休开始",Clock(p.Lunch));
-        var resume=Field(panel,"午休结束",Clock(p.Resume));
-        var end=Field(panel,"下班时间",Clock(p.End));
-        panel.Children.Add(new TextBlock {Text="使用 24 小时制。无需午休时，将午休起止设为同一时间。",TextWrapping=TextWrapping.Wrap});
-        var weekdays=new CheckBox {Content="仅周一至周五计薪",IsChecked=p.Weekdays,Margin=new Thickness(0,10,0,4)};
-        panel.Children.Add(weekdays);
-        var save=ActionButton("保存"); panel.Children.Add(save);
-        save.Click += delegate {
-            var next=new Pay {Start=Minute(start.Text),Lunch=Minute(lunch.Text),Resume=Minute(resume.Text),End=Minute(end.Text),Weekdays=weekdays.IsChecked==true};
-            if(!decimal.TryParse(salary.Text,out next.Monthly) || next.Monthly<=0 || next.Monthly>1000000000 ||
-                !decimal.TryParse(days.Text,out next.Days) || next.Days<1 || next.Days>31) {
-                MessageBox.Show(dialog,"请填写有效月薪（最多 10 亿元）和 1 至 31 之间的计薪天数。"); return;
-            }
-            if(next.Start<0 || next.Start>next.Lunch || next.Lunch>next.Resume || next.Resume>next.End || next.PaidMinutes<=0) {
-                MessageBox.Show(dialog,"请按同一天内的先后顺序填写上下班与午休时间，并保留有效工时。"); return;
-            }
-            data.Pay=next; Save(); Refresh(); dialog.Close();
-        };
-        dialog.ShowDialog();
-    }
     [STAThread] public static void Main() {
         bool first;
         using(var guard=new Mutex(true,"Local\\DailyDesk_74ba0d12",out first)) {
-            if(!first) { MessageBox.Show("日序已经打开。"); return; }
+            if(!first) { RoundedSurfaces.Notice(null,"日序 · RiXu","日序已经打开。 / RiXu is already open."); return; }
             try {
                 string path=Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"RiXuDesk","desk.xml");
                 var data=new DeskData();
@@ -178,10 +154,11 @@ public partial class DayDesk {
                     var window=(Window)XamlReader.Load(stream);
                     new DayDesk(window,data,path); app.Run(window);
                 }
-            } catch(Exception ex) { MessageBox.Show("日序启动或运行失败："+ex.Message,"日序"); }
+            } catch(Exception ex) {
+                string message="日序运行失败 / RiXu could not run: "+ex.Message;
+                try {RoundedSurfaces.Notice(null,"日序 · RiXu",message);}
+                catch {MessageBox.Show(message,"RiXu");}
+            }
         }
     }
 }
-
-
-

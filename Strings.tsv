@@ -1,0 +1,148 @@
+appTitle	日序 · 桌面助手	RiXu · Desktop Assistant
+brand	日序	RiXu
+homeTitle	我的工作台	My desk
+pin	置顶	Always on top
+widgetOpen	加入小窗	Add to widget
+widgetClose	移出小窗	Remove from widget
+widgetToggleTip	在桌面小窗中显示或移除此工具	Show or hide this tool in the desktop widget
+back	返回主页	Back to home
+onlyWidgets	只看小窗	Widget only
+onlyWidgetsTip	最小化工作台，保留桌面小窗	Minimize the desk and keep the widget visible
+localTime	本地时间	Local time
+earned	今日预计已赚	Estimated earnings today
+paySettings	薪资设置	Pay settings
+todayShift	今日班次	Today's shift
+miniPlaces	小窗地点	Widget locations
+manageButton	＋  管理地点	＋  Locations
+analog	指针表盘	Analog
+digital	电子时钟	Digital
+myPlaces	我的地点	My locations
+add	添加	Add
+taskTip	输入待办，回车添加	Type a task and press Enter
+newTask	新待办	New task
+emptyTasks	写下今天的第一件待办。	Add your first task for today.
+reset	重置	Reset
+startFocus	开始专注	Start focus
+payTitle	收入计算器	Earnings
+payCaption	按秒查看今日收入	See today's earnings by the second
+worldTitle	世界时钟	World clock
+worldCaption	查看各地时间与表盘	View local times and clock faces
+todoTitle	待办清单	Tasks
+todoCaption	整理任务，开始专注	Organize tasks and start a focus session
+widget	小窗	Widget
+widgetFor	在桌面小窗中显示{0}	Show {0} in the desktop widget
+editPlaces	管理地点	Manage locations
+savePlaces	保存地点	Save locations
+searchHint	搜索国家、地区或城市	Search countries, regions or cities
+noMatches	没有匹配的地点	No matching locations
+needPlace	请至少选择一个地点。	Select at least one location.
+widgetPlacesTitle	小窗显示哪些时钟	Clocks to show in the widget
+save	保存	Save
+needWidgetPlace	请至少保留一个小窗时钟。	Select at least one widget clock.
+returnFull	返回完整窗口	Open full view
+chooseMiniPlaces	选择小窗地点	Choose widget locations
+miniPayTip	今日预计已赚 · 拖动移动，双击展开	Estimated earnings today · Drag to move, double-click to expand
+miniEarned	今日收入	Earned today
+locations	地点	Places
+note	待办便签	Task note
+noTasks	暂无待办	No tasks yet
+delete	删除	Delete
+deleteTip	删除此待办	Delete this task
+pendingCount	{0} 项待办	Open tasks: {0}
+rateEmpty	在薪资设置中填写月薪，即可开始估算	Enter your monthly pay in Pay settings to start.
+rates	秒薪 {0}     /     日薪 {1}	{0} / second     ·     {1} / day
+offDay	休息日	Day off
+beforeWork	尚未上班	Before work
+afterWork	已下班	Shift complete
+lunch	午休中	Lunch break
+working	工作中	At work
+paySummary	{0}  ·  今日预计已赚 {1}	{0}  ·  {1} earned today
+setupPay	设置月薪与工作时间	Set your pay and working hours
+worldSummary	{0} 个地点  ·  {1}	Saved: {0}  ·  {1}
+taskSummary	{0} 项待办  ·  {1} 项已完成	{0} open  ·  {1} done
+countdown	距下班  {0}	Shift ends in {0}
+focusDone	专注完成，休息一下	Focus complete. Take a break.
+focus	专注计时	Focus timer
+pause	暂停	Pause
+resume	继续	Resume
+payCurrency	薪资币种	Pay currency
+monthly	月薪	Monthly pay
+currencyHint	按所选币种填写月薪。切换币种会保留输入的数值。	Enter your pay in the selected currency. Changing currency keeps the amount you entered.
+days	月计薪天数	Paid days per month
+shiftStart	上班时间	Shift starts
+breakStart	午休开始	Lunch starts
+breakEnd	午休结束	Lunch ends
+shiftEnd	下班时间	Shift ends
+breakHint	使用 24 小时制。无需午休时，将午休起止设为同一时间。	Use 24-hour times. For a shift without a lunch break, enter the same start and end time for lunch.
+weekdays	仅周一至周五计薪	Count Monday through Friday only
+payInvalid	月薪数值须在 0 至 10 亿之间，通用月计薪天数须在 1 至 31 之间。	Enter monthly pay between 0 and 1 billion and 1 to 31 default paid days.
+shiftInvalid	请按同一天内的先后顺序填写上下班与午休时间，并保留有效工时。	Enter same-day shift and lunch times in order, with some paid working time.
+saveError	本次修改仅在当前窗口生效。保存失败：	Could not save your changes to disk:
+listOnly	无表盘	List only
+taskHistory	完成记录	Completion history
+planTask	安排任务…	Plan task…
+editTask	编辑	Edit
+taskDetails	任务详情	Task details
+taskTitle	任务名称	Task name
+taskStarts	计划开始	Planned start
+taskEnds	计划结束	Planned end
+taskPriority	优先级	Priority
+hour	小时	Hour
+minute	分钟	Minute
+hourShort	时	hr
+minuteShort	分	min
+clearTaskTime	清除{0}	Clear {0}
+badTitle	请填写任务名称。	Enter a task name.
+badOrder	计划结束时间须晚于开始时间。	The planned end must be after the start.
+startOnly	{0} 开始	Starts {0}
+endOnly	{0} 截止	Due {0}
+periodDay	按日	Day
+periodWeek	按周	Week
+periodMonth	按月	Month
+unknownDay	日期未知	Undated
+historyToday	今天	Today
+periodPrev	上一期	Previous period
+periodNext	下一期	Next period
+historyCount	完成 {0} 项	{0} completed
+emptyHistory	此时段还没有完成记录。	No tasks completed in this period.
+legacyCompletion	旧版任务未记录完成日期	Older tasks without a completion date
+historyDate	记录日期	History date
+archiveTask	移出清单	Archive
+archiveHint	从待办清单移除，保留完成记录	Remove from the task list and keep in completion history
+shiftTab	薪资与班次	Pay and hours
+monthTab	工作日历	Work calendar
+lunchDuration	每日午休（分钟）	Daily lunch (minutes)
+lunchHelp	从午休开始时间起暂停计薪；填 0 表示没有午休。	Pay pauses when lunch starts. Use 0 for no break.
+fallbackRules	未自定义月份的规则	Default for unplanned months
+monthWeekdays	选周一至五	Weekdays
+monthAll	选全月	All days
+monthNone	清空	Clear
+monthReset	恢复通用规则	Use default
+calendarHelp	点日期切换上班／休息。选中的日期参与计薪；带圆点的日期有单独午休设置。	Click dates to toggle workdays. Selected dates earn pay. A dot marks a custom lunch.
+calendarCustom	已自定义 · 本月 {0} 个工作日	Custom · {0} workdays this month
+calendarDefault	使用通用规则 · 月计薪天数见「薪资与班次」	Using default paid days from Pay and hours
+workDate	工作日	Workday
+restDate	休息日	Day off
+lunchDate	指定日期的午休…	Lunch for a date…
+lunchDateTitle	单日午休	Lunch for one day
+lunchForDate	日期	Date
+lunchMinutes	午休时长（分钟）	Lunch length (minutes)
+dateBreakHelp	留空可恢复每日默认时长。日期是否计薪由工作日历决定。	Leave blank to use the daily default. Workdays are set in the calendar.
+lunchCustomInfo	当日午休 {0} 分钟	Lunch: {0} min
+lunchInvalid	请填写非负整数分钟。午休须在班次内，且至少留一分钟计薪。	Use whole minutes of 0 or more. Lunch must fit within the shift and leave at least one paid minute.
+dateBreakInvalid	{0} 的单日午休超出当前班次，请调整该日期或班次。	The lunch on {0} exceeds this shift. Adjust that date or the shift.
+noWorkThisMonth	本月没有勾选工作日	No workdays selected this month
+monthBack	上个月	Previous month
+monthForward	下个月	Next month
+winMin	最小化	Minimize
+winMax	最大化	Maximize
+winRestore	还原窗口	Restore
+winClose	关闭窗口	Close window
+pickDate	选择日期	Choose date
+confirm	确定	OK
+clockTilt	移动鼠标看表壳反光，拖动可查看侧面。	Move the pointer to catch the light, or drag to see the case in profile.
+dialDesign	表盘款式	Dial style
+dialTitanium	钛蓝	Titanium blue
+dialStation	瓷白车站	Station white
+dialOrbit	紫夜轨道	Violet orbit
+dialHeritage	胡桃木	Walnut
